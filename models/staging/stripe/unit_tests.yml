@@ -1,0 +1,34 @@
+unit_tests:
+  - name: test_payment_amount_cleanup
+    description: test my amount case when
+    model: stg_payments
+    given:
+      - input: source('stripe', 'payment')
+        rows: 
+          - {id: 1, amount: 500}
+          - {id: 2, amount: 999}
+          - {id: 3, amount: 1000}
+          - {id: 4, amount: 1999}
+          - {id: 5, amount: 2000}
+          - {id: 6, amount: 5000}
+    expect:
+      rows:
+        - {payment_id: 1, payment_amount_tier: low}
+        - {payment_id: 2, payment_amount_tier: low}
+        - {payment_id: 3, payment_amount_tier: mid}
+        - {payment_id: 4, payment_amount_tier: mid}
+        - {payment_id: 5, payment_amount_tier: high}
+        - {payment_id: 6, payment_amount_tier: high}
+  - name: test_days_since_created
+    model: stg_payments
+    overrides:
+      macros: 
+        dbt.current_timestamp: "date('2018-01-10')"
+    given:
+      - input: source('stripe', 'payment')
+        rows:
+          - {created: 2018-01-01}
+    expect:
+      rows:
+        - {payment_created: 2018-01-01, days_since_created: 9}
+      
